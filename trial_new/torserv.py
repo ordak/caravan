@@ -1,9 +1,15 @@
 # TOODO
 #  -> add "changed" flags for all UI fields, esp. accumulated
-#  -> 4 modes:
-#        input-only window + full window
-#        sensor-level
-#        input-only window
+#  -> API:
+#        entry pages
+#          input-only window + full window
+#          sensor-level window
+#          input-only window (with input-output window open elsewhere)
+#        buttons
+#          cycleButtonFunction
+#          forceButtonAction
+#          getState
+#          static serving (jquery.js)
 
 import enum
 import queue
@@ -61,11 +67,17 @@ button_functions = {
         4 : ButtonFunction.SPACE,
         }
 
-
-class MainHandler(tornado.web.RequestHandler):
+class MainViewHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("template_spa.html")
 
+class SensorsViewHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("template_spa.html")
+
+class InputOnlyViewHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("template_spa.html")
 
 class GetButtonFunctionsHandler(tornado.web.RequestHandler):
     def get(self):
@@ -149,7 +161,7 @@ def processEvent(event : ButtonFunction):
     elif event == ButtonFunction.NOP:
         pass
 
-class EventsHandler(tornado.web.RequestHandler):
+class GetStateHandler(tornado.web.RequestHandler):
     def get(self):
         if _SEQUENTIAL_TEST:
             self.write(json.dumps(next(eventGenerator)))
@@ -171,14 +183,24 @@ class EventsHandler(tornado.web.RequestHandler):
 
 
 def make_app():
+
     return tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/events", EventsHandler),
-        (r"/static/(.*)",
-                tornado.web.StaticFileHandler, {"path": "static"}),
+
+        # main app pages (views)
+        (r"/", MainViewHandler),
+        (r"/inputOnly", InputViewHandler),
+        (r"/sensors", SensorsViewHandler),
+
+        # dynamic operation endpoints
+        (r"/getState", GetStateHandler),
         (r"/cycleButtonFunction", CycleButtonFunctionHandler),
         (r"/forceButtonAction", ForceButtonActionHandler),
         (r"/getButtonFunctions", GetButtonFunctionsHandler),
+
+        # misc endpoints
+        (r"/static/(.*)",
+                tornado.web.StaticFileHandler, {"path": "static"}),
+
     ])
 
 if __name__ == "__main__":
